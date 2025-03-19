@@ -2,20 +2,17 @@
 #include <stdlib.h> 
 #include <mpi.h> 
  
-// Swap function 
 void swap(int *a, int *b) { 
     int temp = *a; 
     *a = *b; 
     *b = temp; 
 } 
  
-// Odd-Even Sort Algorithm 
 void odd_even_sort(int *arr, int n) { 
     int sorted = 0; 
     while (!sorted) { 
         sorted = 1; 
  
-        // Odd Phase 
         for (int i = 1; i < n - 1; i += 2) { 
             if (arr[i] > arr[i + 1]) { 
                 swap(&arr[i], &arr[i + 1]); 
@@ -23,7 +20,6 @@ void odd_even_sort(int *arr, int n) {
             } 
         } 
  
-        // Even Phase 
         for (int i = 0; i < n - 1; i += 2) { 
             if (arr[i] > arr[i + 1]) { 
                 swap(&arr[i], &arr[i + 1]); 
@@ -33,7 +29,6 @@ void odd_even_sort(int *arr, int n) {
     } 
 } 
  
-// Parallel Odd-Even Sort using MPI 
 void parallel_odd_even_sort(int *local_arr, int local_n, int rank, int size) { 
     int sorted = 0; 
     MPI_Status status; 
@@ -41,7 +36,6 @@ void parallel_odd_even_sort(int *local_arr, int local_n, int rank, int size) {
     while (!sorted) { 
         sorted = 1; 
  
-        // Odd Phase 
         if (rank % 2 == 1 && rank < size - 1) { 
             MPI_Send(local_arr + local_n - 1, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD); 
             MPI_Recv(local_arr + local_n - 1, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &status); 
@@ -55,7 +49,6 @@ void parallel_odd_even_sort(int *local_arr, int local_n, int rank, int size) {
             MPI_Send(&recv, 1, MPI_INT, rank - 1, 0, MPI_COMM_WORLD); 
         } 
  
-        // Even Phase 
         if (rank % 2 == 0 && rank < size - 1) { 
             MPI_Send(local_arr + local_n - 1, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD); 
             MPI_Recv(local_arr + local_n - 1, 1, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &status); 
@@ -69,7 +62,6 @@ void parallel_odd_even_sort(int *local_arr, int local_n, int rank, int size) {
             MPI_Send(&recv, 1, MPI_INT, rank - 1, 0, MPI_COMM_WORLD); 
         } 
  
-        // Check if all processes are sorted 
         int global_sorted; 
         MPI_Allreduce(&sorted, &global_sorted, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD); 
         sorted = global_sorted; 
@@ -87,16 +79,12 @@ int main(int argc, char *argv[]) {
     int local_n = n / size; 
     int *local_arr = (int *)malloc(local_n * sizeof(int)); 
  
-    // Scatter data to processes 
     MPI_Scatter(arr, local_n, MPI_INT, local_arr, local_n, MPI_INT, 0, MPI_COMM_WORLD); 
  
-    // Perform parallel sorting 
     parallel_odd_even_sort(local_arr, local_n, rank, size); 
  
-    // Gather sorted subarrays 
     MPI_Gather(local_arr, local_n, MPI_INT, arr, local_n, MPI_INT, 0, MPI_COMM_WORLD); 
- 
-    // Display sorted array 
+  
     if (rank == 0) { 
         printf("Sorted Array: "); 
         for (int i = 0; i < n; i++) { 
